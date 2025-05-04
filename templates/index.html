@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluster Configuration</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --required-color: #e74c3c;
+            --border-color: #ddd;
+            --bg-color: #f9f9f9;
+            --section-bg: #fff;
+        }
+
+        .invalid {
+        border-color: red;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            background-color: var(--section-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .required::after {
+            content: " *";
+            color: var(--required-color);
+            font-weight: bold;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .form-help {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+        
+        .btn-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .output-container {
+            margin-top: 30px;
+            background-color: #2c3e50;
+            border-radius: 8px;
+            padding: 20px;
+            color: #ecf0f1;
+        }
+        
+        .output-title {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        
+        #commandOutput {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        /* For tooltip on hover */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            font-weight: normal;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cluster Configuration</h1>
+        
+        <form id="clusterConfigForm">
+
+            <!-- Cluster Management Section -->
+            <div class="section">
+                <h2 class="section-title">Cluster Management</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="cluster-name" class="required">Cluster Name</label>
+                        <input type="text" id="cluster-name" name="cluster-name" required>
+                        <div class="form-help">Unique name for your Kubernetes cluster</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vm-image" class="required">VM Image</label>
+                        <input type="text" id="vm-image" name="vm-image" required>
+                        <small id="errorMsg-cluster-vm-image" style="color: red;"></small>
+                        <div class="form-help">Default VM image for cluster nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ssh-username">SSH Username</label>
+                        <input type="text" id="ssh-username" name="ssh-username">
+                        <div class="form-help">SSH username for connecting to nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ssh-public-key-file">SSH Public Key File</label>
+                        <input type="text" id="ssh-public-key-file" name="ssh-public-key-file">
+                        <div class="form-help">Path to SSH public key file</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="timeout">Timeout (seconds)</label>
+                        <input type="number" id="timeout" name="timeout">
+                        <div class="form-help">Operation timeout in seconds</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kubernetes Configuration Section -->
+            <div class="section">
+                <h2 class="section-title">Kubernetes Configuration</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="kubernetes-pod-network-cidr">Pod Network CIDR</label>
+                        <input type="text" id="kubernetes-pod-network-cidr" name="kubernetes-pod-network-cidr" placeholder="10.244.0.0/16">
+                        <div class="form-help">CIDR range for pod network</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="kubernetes-service-cidr">Service CIDR</label>
+                        <input type="text" id="kubernetes-service-cidr" name="kubernetes-service-cidr" placeholder="10.96.0.0/12">
+                        <div class="form-help">CIDR range for services</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="kubernetes-service-load-balancer-ip-range" class="required">Load Balancer IP Range</label>
+                        <input type="text" id="kubernetes-service-load-balancer-ip-range" name="kubernetes-service-load-balancer-ip-range" required>
+                        <div class="form-help">IP range for service load balancers (e.g., 10.0.0.100-10.0.0.200)</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="kubernetes-version">Kubernetes Version</label>
+                        <input type="text" id="kubernetes-version" name="kubernetes-version" placeholder="1.28.0">
+                        <div class="form-help">Kubernetes version to install</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="namespace">Namespace</label>
+                        <input type="text" id="namespace" name="namespace" placeholder="default">
+                        <div class="form-help">Kubernetes namespace for cluster resources</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CSI & Endpoint Section -->
+            <div class="section">
+                <h2 class="section-title">Storage & Endpoint Configuration</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="csi-storage-container" class="required">CSI Storage Container</label>
+                        <input type="text" id="csi-storage-container" name="csi-storage-container" required>
+                        <div class="form-help">Storage container for CSI driver</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endpoint" class="required">Prism Central Endpoint</label>
+                        <input type="text" id="endpoint" name="endpoint" required>
+                        <small id="errorMsg-endpoint" style="color: red;"></small>
+                        <div class="form-help">Endpoint for Prism Central (e.g., 10.0.0.1:9440)</div>
+                    </div>
+                </div>
+            </div>
+            
+
+            
+            <!-- Registry Configuration Section -->
+            <div class="section">
+                <h2 class="section-title">Registry Configuration</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="registry-url" class="required">Registry URL</label>
+                        <input type="text" id="registry-url" name="registry-url" required>
+                        <small id="errorMsg-registry" style="color: red;"></small>
+                        <div class="form-help">URL of the container registry</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registry-username" class="required">Registry Username</label>
+                        <input type="text" id="registry-username" name="registry-username" required>
+                        <div class="form-help">Username for container registry</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registry-password" class="required">Registry Password</label>
+                        <input type="password" id="registry-password" name="registry-password" required>
+                        <div class="form-help">Password for container registry</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registry-cacert">Registry CA Cert</label>
+                        <textarea id="registry-cacert" name="registry-cacert" rows="2"></textarea>
+                        <div class="form-help">CA certificate for container registry (if using self-signed cert)</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registry-mirror-url">Mirror URL</label>
+                        <input type="text" id="registry-mirror-url" name="registry-mirror-url">
+                        <div class="form-help">URL for registry mirror</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registry-mirror-username">Mirror Username</label>
+                        <input type="text" id="registry-mirror-username" name="registry-mirror-username">
+                        <div class="form-help">Username for registry mirror</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registry-mirror-password">Mirror Password</label>
+                        <input type="password" id="registry-mirror-password" name="registry-mirror-password">
+                        <div class="form-help">Password for registry mirror</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="registry-mirror-cacert">Mirror CA Cert</label>
+                        <textarea id="registry-mirror-cacert" name="registry-mirror-cacert" rows="2"></textarea>
+                        <div class="form-help">CA certificate for registry mirror</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Plane Section -->
+            <div class="section">
+                <h2 class="section-title">Control Plane Configuration</h2>
+                <div class="form-grid">
+                    
+                    <div class="form-group">
+                        <label for="control-plane-cores-per-vcpu">Cores Per vCPU</label>
+                        <input type="number" id="control-plane-cores-per-vcpu" name="control-plane-cores-per-vcpu">
+                        <div class="form-help">Number of cores per vCPU for control plane nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-disk-size">Disk Size (GB)</label>
+                        <input type="number" id="control-plane-disk-size" name="control-plane-disk-size">
+                        <div class="form-help">Storage size for control plane nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-endpoint-ip" class="required">Endpoint IP</label>
+                        <input type="text" id="control-plane-endpoint-ip" name="control-plane-endpoint-ip" required>
+                        <div class="form-help">IP address for the Kubernetes API server endpoint</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-endpoint-port">Endpoint Port</label>
+                        <input type="number" id="control-plane-endpoint-port" name="control-plane-endpoint-port" value="6443">
+                        <div class="form-help">Port for the Kubernetes API server (default: 6443)</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-memory">Memory (GB)</label>
+                        <input type="number" id="control-plane-memory" name="control-plane-memory">
+                        <div class="form-help">Memory allocation for control plane nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-pc-project">PC Project</label>
+                        <input type="text" id="control-plane-pc-project" name="control-plane-pc-project">
+                        <div class="form-help">Prism Central project for control plane nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-prism-element-cluster" class="required">Prism Element Cluster</label>
+                        <input type="text" id="control-plane-prism-element-cluster" name="control-plane-prism-element-cluster" required>
+                        <div class="form-help">Name of the Prism Element cluster for control plane</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-replicas">Replicas</label>
+                        <input type="number" id="control-plane-replicas" name="control-plane-replicas" value="1">
+                        <div class="form-help">Number of control plane node replicas</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-subnets" class="required">Subnets</label>
+                        <input type="text" id="control-plane-subnets" name="control-plane-subnets" required>
+                        <div class="form-help">Comma-separated list of subnets for control plane nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-vcpus">vCPUs</label>
+                        <input type="number" id="control-plane-vcpus" name="control-plane-vcpus">
+                        <div class="form-help">Number of vCPUs for control plane nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="control-plane-vm-image" class="required">VM Image</label>
+                        <input type="text" id="control-plane-vm-image" name="control-plane-vm-image" required>
+                        <div class="form-help">VM image name for control plane nodes</div>
+                    </div>
+                </div>
+            </div>
+                        
+            <!-- Worker Nodes Section -->
+            <div class="section">
+                <h2 class="section-title">Worker Node Configuration</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="worker-cores-per-vcpu">Cores Per vCPU</label>
+                        <input type="number" id="worker-cores-per-vcpu" name="worker-cores-per-vcpu">
+                        <div class="form-help">Number of cores per vCPU for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-disk-size">Disk Size (GB)</label>
+                        <input type="number" id="worker-disk-size" name="worker-disk-size">
+                        <div class="form-help">Storage size for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-memory">Memory (GB)</label>
+                        <input type="number" id="worker-memory" name="worker-memory">
+                        <div class="form-help">Memory allocation for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-pc-categories">PC Categories</label>
+                        <input type="text" id="worker-pc-categories" name="worker-pc-categories">
+                        <div class="form-help">Prism Central categories for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-pc-project">PC Project</label>
+                        <input type="text" id="worker-pc-project" name="worker-pc-project">
+                        <div class="form-help">Prism Central project for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-prism-element-cluster" class="required">Prism Element Cluster</label>
+                        <input type="text" id="worker-prism-element-cluster" name="worker-prism-element-cluster" required>
+                        <div class="form-help">Name of the Prism Element cluster for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-replicas">Replicas</label>
+                        <input type="number" id="worker-replicas" name="worker-replicas" value="1">
+                        <div class="form-help">Number of worker node replicas</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-subnets" class="required">Subnets</label>
+                        <input type="text" id="worker-subnets" name="worker-subnets" required>
+                        <div class="form-help">Comma-separated list of subnets for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-vcpus">vCPUs</label>
+                        <input type="number" id="worker-vcpus" name="worker-vcpus">
+                        <div class="form-help">Number of vCPUs for worker nodes</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="worker-vm-image" class="required">VM Image</label>
+                        <input type="text" id="worker-vm-image" name="worker-vm-image" required>
+                        <div class="form-help">VM image name for worker nodes</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button type="button" id="generateCommand" class="btn">Generate Command</button>
+            </div>
+        </form>
+        
+        <div class="output-container">
+            <h3 class="output-title">Console output</h3>
+            <pre id="commandOutput">...</pre>
+            <div id="loadingIndicator" style="display: none;">Processing...</div>
+            <div id="errorDisplay" class="error" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <script>
+
+window.addEventListener('load', function(e) {
+            /////////////////////////Input Validators////////////////////////////
+
+    const endpointUrl = document.getElementById('endpoint');
+    const registryUrl = document.getElementById('registry-url');
+    const clusterImage = document.getElementById('vm-image');
+    const controlPlaneImage = document.getElementById('control-plane-vm-image');
+    const workerImage = document.getElementById('worker-vm-image');
+
+    endpoint.addEventListener("blur", (e)=>{
+        const errorMsg  = document.getElementById("errorMsg-endpoint");
+        e.preventDefault();
+        if(!isValidURL(e.target.value)){
+            endpoint.classList.add('invalid');
+            errorMsg.textContent = 'Please enter a valid URL.';
+        }else{
+            endpoint.classList.remove('invalid');
+            errorMsg.textContent = '';
+        }
+    }, false)
+
+    registryUrl.addEventListener("blur", (e)=>{
+        const errorMsg  = document.getElementById("errorMsg-registry");
+        e.preventDefault();
+        if(!isValidURL(e.target.value)){
+            registryUrl.classList.add('invalid');  
+            errorMsg.textContent = 'Please enter a valid URL.';
+        }else{
+            registryUrl.classList.remove('invalid');
+            errorMsg.textContent = '';
+        }
+    }, false)
+
+    clusterImage.addEventListener("blur", (e)=>{
+        const errorMsg  = document.getElementById("errorMsg-cluster-vm-image");
+        e.preventDefault();
+        if(clusterImage.value && controlPlaneImage.value || clusterImage.value && workerImage.value ){
+            clusterImage.classList.add('invalid');  
+            errorMsg.textContent = 'You can only select VM image for cluster if both control plane or worker VM images are not selected';
+        }else{
+            registryUrl.classList.remove('invalid');
+            errorMsg.textContent = '';
+        }
+    }, false)
+    
+    ///////////////////////////End of Validators////////////////////////////
+}, false);
+
+
+    document.getElementById('generateCommand').addEventListener('click', async function(e) {
+    e.preventDefault();
+
+    
+    const commandOutput = document.getElementById('commandOutput');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorDisplay = document.getElementById('errorDisplay');
+    const form = document.getElementById('clusterConfigForm');
+
+    
+    // Clear previous output and show loading
+    commandOutput.innerHTML = '';
+    errorDisplay.style.display = 'none';
+    loadingIndicator.style.display = 'block';
+
+    const formData = {};
+    const inputs = form.querySelectorAll('input, textarea');
+
+    // Process each input and add to formData if it has a value
+    inputs.forEach(input => {
+        const value = input.value.trim();
+        if (value) {
+            formData[input.name] = value;
+        }
+    });
+    
+    try {
+        const response = await fetch('/deploy/management', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        // Check if the request was successful
+        if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        // Process the stream
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    console.log('Stream completed successfully');
+                    break;
+                }
+                
+                const text = decoder.decode(value);
+                const eventData = parseSSEData(text);
+                
+                for (const data of eventData) {
+                    if (data === '[DONE]') {
+                        console.log('Stream completed');
+                    } else {
+                        // Check if data indicates an error
+                        if (data.startsWith('ERROR:')) {
+                            const errorMsg = document.createElement('p');
+                            errorMsg.className = 'error-message';
+                            errorMsg.textContent = data;
+                            commandOutput.appendChild(errorMsg);
+                        } else {
+                            // Append to output div
+                            const line = document.createElement('p');
+                            line.textContent = data;
+                            commandOutput.appendChild(line);
+                        }
+                        
+                        // Auto-scroll to bottom
+                        commandOutput.scrollTop = commandOutput.scrollHeight;
+                    }
+                }
+            }
+        } catch (streamError) {
+            console.error('Stream reading error:', streamError);
+            errorDisplay.textContent = 'The connection was interrupted. The command may still be running on the server.';
+            errorDisplay.style.display = 'block';
+        }
+    } catch (fetchError) {
+        console.error('Fetch error:', fetchError);
+        errorDisplay.textContent = `Error connecting to server: ${fetchError.message}`;
+        errorDisplay.style.display = 'block';
+    } finally {
+        loadingIndicator.style.display = 'none';
+    }
+});
+
+function parseSSEData(text) {
+    const result = [];
+    const lines = text.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('data:')) {
+            const data = line.substring(5).trim();
+            result.push(data);
+        }
+    }
+    
+    return result;
+}
+
+function isValidURL(url) {
+  const regex = /^(https?:\/\/)?((([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})|(\d{1,3}(\.\d{1,3}){3}))(:\d+)?(\/[^\s]*)?$/;
+  return regex.test(url);
+}
+
+
+    </script>
+</body>
+</html>
