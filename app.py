@@ -11,75 +11,94 @@ templates = Jinja2Templates(directory="templates")
 def handle_command_creation(deployment: dict):
     flags = {
         # Control plane
+
         "cluster-name": {"required": True},
-        "control-plane-cores-per-vcpu": {"required": False},
-        "control-plane-disk-size": {"required": False},
         "control-plane-endpoint-ip": {"required": True},
-        "control-plane-endpoint-port": {"required": False},
-        "control-plane-memory": {"required": False},
-        "control-plane-pc-project": {"required": False},
         "control-plane-prism-element-cluster": {"required": True},
-        "control-plane-replicas": {"required": False},
         "control-plane-subnets": {"required": True},
-        "control-plane-vcpus": {"required": False},
         "control-plane-vm-image": {"required": True},
+        # "control-plane-cores-per-vcpu": {"required": False},
+        # "control-plane-disk-size": {"required": False},
+        # "control-plane-endpoint-port": {"required": False},
+        # "control-plane-memory": {"required": False},
+        # "control-plane-pc-project": {"required": False},
+        # "control-plane-vcpus": {"required": False},
+        # "control-plane-replicas": {"required": False},
+
         
         # CSI
+
         "csi-storage-container":{"required": True},
         
         # Endpoint for Prism central
+
         "endpoint": {"required": True},
 
         # Kubernetes
-        "kubernetes-pod-network-cidr": {"required": False},
-        "kubernetes-service-cidr": {"required": False},
+
         "kubernetes-service-load-balancer-ip-range": {"required": True},
-        "kubernetes-version": {"required": False},
-        "namespace": {"required": False},
+        # "kubernetes-pod-network-cidr": {"required": False},
+        # "kubernetes-service-cidr": {"required": False},
+        # "kubernetes-version": {"required": False},
+        # "namespace": {"required": False},
         
         # Registry
-        "registry-cacert": {"required": False},
-        "registry-mirror-cacert": {"required": False},
-        "registry-mirror-password": {"required": False},
-        "registry-mirror-url": {"required": False},
-        "registry-mirror-username": {"required": False},
+
+        # "registry-cacert": {"required": False},
+        # "registry-mirror-cacert": {"required": False},
+        # "registry-mirror-password": {"required": False},
+        # "registry-mirror-url": {"required": False},
+        # "registry-mirror-username": {"required": False},
         "registry-password": {"required": True},
         "registry-url": {"required": True},
         "registry-username": {"required": True},
         
         # Cluster management
-        "ssh-public-key-file":{"required": False},
-        "ssh-username": {"required": False},
+
+        # "ssh-public-key-file":{"required": False},
+        # "ssh-username": {"required": False},
 
         # Timeout
-        "timeout":{"required": False},
+
+        # "timeout":{"required": False},
 
         # VM image
+
         "vm-image": {"required": True},
 
         # Worker
-        "worker-cores-per-vcpu":{"required": False},
-        "worker-disk-size": {"required": False},
-        "worker-memory": {"required": False},
-        "worker-pc-categories": {"required": False},
-        "worker-pc-project": {"required": False},
+
+        # "worker-cores-per-vcpu":{"required": False},
+        # "worker-disk-size": {"required": False},
+        # "worker-memory": {"required": False},
+        # "worker-pc-categories": {"required": False},
+        # "worker-pc-project": {"required": False},
+        # "worker-replicas": {"required": False},
+        # "worker-vcpus": {"required": False},
         "worker-prism-element-cluster": {"required": True},
-        "worker-replicas": {"required": False},
         "worker-subnets": {"required": True},
-        "worker-vcpus": {"required": False},
         "worker-vm-image":{"required": True},
     }
     missing = [flag for flag, prop in flags.items() if prop["required"] and flag not in deployment]
+
+    if "vm-image" in deployment:
+        missing = [m for m in missing if m not in ("worker-vm-image", "control-plane-vm-image")]
+
+    # Remove "vm-image" from missing if both "worker-vm-image" and "control-plane-vm-image" are present
+    elif "worker-vm-image" in deployment and "control-plane-vm-image" in deployment:
+        if "vm-image" in missing:
+            missing.remove("vm-image")
+
     if missing:
-        raise ValueError(f"Missing required flags: {', '.join(missing)}")
+        raise ValueError(f"Missing required flags: {" ".join(missing)}")
 
     # Step 2: Build the command
-    base_command = ["nkp", "create", "cluster", "nutanix \\"]  # Example
+    base_command = ["nkp", "create", "cluster", "nutanix "]  # Example
     for flag, value in deployment.items():
         base_command.append(f"--{flag}={value}")
 
-    base_command.append("--insecure=True")
-    base_command.append("--self-managed=True")
+    base_command.append("--insecure")
+    base_command.append("--self-managed")
 
     # Final command string
     final_command = " ".join(base_command) 
@@ -87,7 +106,6 @@ def handle_command_creation(deployment: dict):
     return final_command
 
 def deploy_cluster(command: str):
-    # test_command = 'for i in {1..60}; do echo "Output at $(date)"; sleep 1; done'
     try:
         async def command_stream():
             try:

@@ -216,9 +216,9 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="ssh-public-key-file">SSH Public Key File</label>
-                        <input type="text" id="ssh-public-key-file" name="ssh-public-key-file">
-                        <div class="form-help">Path to SSH public key file</div>
+                        <label for="ssh-public-key-file">SSH Public Key</label>
+                        <textarea type="text" id="ssh-public-key-file" name="ssh-public-key-file"></textarea>
+                        <div class="form-help">SSH public key</div>
                     </div>
                     
                     <div class="form-group">
@@ -248,6 +248,7 @@
                     <div class="form-group">
                         <label for="kubernetes-service-load-balancer-ip-range" class="required">Load Balancer IP Range</label>
                         <input type="text" id="kubernetes-service-load-balancer-ip-range" name="kubernetes-service-load-balancer-ip-range" required>
+                        <small id="errorMsg-kubernetes-service-load-balancer-ip-range" style="color: red;"></small>
                         <div class="form-help">IP range for service load balancers (e.g., 10.0.0.100-10.0.0.200)</div>
                     </div>
                     
@@ -361,6 +362,7 @@
                     <div class="form-group">
                         <label for="control-plane-endpoint-ip" class="required">Endpoint IP</label>
                         <input type="text" id="control-plane-endpoint-ip" name="control-plane-endpoint-ip" required>
+                        <small id="errorMsg-control-plane-endpoint-ip" style="color: red;"></small>
                         <div class="form-help">IP address for the Kubernetes API server endpoint</div>
                     </div>
                     
@@ -409,6 +411,7 @@
                     <div class="form-group">
                         <label for="control-plane-vm-image" class="required">VM Image</label>
                         <input type="text" id="control-plane-vm-image" name="control-plane-vm-image" required>
+                        <small id="errorMsg-control-plane-vm-image" style="color: red;"></small>
                         <div class="form-help">VM image name for control plane nodes</div>
                     </div>
                 </div>
@@ -475,6 +478,7 @@
                     <div class="form-group">
                         <label for="worker-vm-image" class="required">VM Image</label>
                         <input type="text" id="worker-vm-image" name="worker-vm-image" required>
+                        <small id="errorMsg-worker-vm-image" style="color: red;"></small>
                         <div class="form-help">VM image name for worker nodes</div>
                     </div>
                 </div>
@@ -503,6 +507,32 @@ window.addEventListener('load', function(e) {
     const clusterImage = document.getElementById('vm-image');
     const controlPlaneImage = document.getElementById('control-plane-vm-image');
     const workerImage = document.getElementById('worker-vm-image');
+    const lbRange = document.getElementById("kubernetes-service-load-balancer-ip-range");
+    const k8Endpoint = document.getElementById("control-plane-endpoint-ip");
+
+    lbRange.addEventListener("blur", (e)=>{
+        const errorMsg  = document.getElementById("errorMsg-kubernetes-service-load-balancer-ip-range");
+        e.preventDefault();
+        if(!isValidLBRange(e.target.value)){
+            lbRange.classList.add('invalid');
+            errorMsg.textContent = 'Please enter a valid IP range.';
+        }else{
+            lbRange.classList.remove('invalid');
+            errorMsg.textContent = '';
+        }
+    }, false)     
+    
+    k8Endpoint.addEventListener("blur", (e)=>{
+        const errorMsg  = document.getElementById("errorMsg-control-plane-endpoint-ip");
+        e.preventDefault();
+        if(!isValidIP(e.target.value)){
+            k8Endpoint.classList.add('invalid');
+            errorMsg.textContent = 'Please enter a valid IP endpoint.';
+        }else{
+            k8Endpoint.classList.remove('invalid');
+            errorMsg.textContent = '';
+        }
+    }, false)
 
     endpoint.addEventListener("blur", (e)=>{
         const errorMsg  = document.getElementById("errorMsg-endpoint");
@@ -528,15 +558,63 @@ window.addEventListener('load', function(e) {
         }
     }, false)
 
-    clusterImage.addEventListener("blur", (e)=>{
+    clusterImage.addEventListener("change", (e)=>{
         const errorMsg  = document.getElementById("errorMsg-cluster-vm-image");
+        const hasCluster = clusterImage.value;
+        const hasControlPlane = controlPlaneImage.value;
+        const hasWorker = workerImage.value;
         e.preventDefault();
-        if(clusterImage.value && controlPlaneImage.value || clusterImage.value && workerImage.value ){
+        if(hasCluster && (hasControlPlane || hasWorker)){
             clusterImage.classList.add('invalid');  
-            errorMsg.textContent = 'You can only select VM image for cluster if both control plane or worker VM images are not selected';
-        }else{
+            errorMsg.textContent = 'You can only select cluster VM image if neither control plane nor worker VM images are selected.';
+        }else if(hasCluster){
             registryUrl.classList.remove('invalid');
             errorMsg.textContent = '';
+            controlPlaneImage.disabled = true;
+            workerImage.disabled = true;
+        }else {
+            controlPlaneImage.disabled = false;
+            workerImage.disabled = false;
+        }
+    }, false)
+
+    workerImage.addEventListener("change", (e)=>{
+        const errorMsg  = document.getElementById("errorMsg-worker-vm-image");
+        const errorMsgOther  = document.getElementById("errorMsg-control-plane-vm-image");
+        const hasCluster = clusterImage.value;
+        const hasControlPlane = controlPlaneImage.value;
+        const hasWorker = workerImage.value;
+        e.preventDefault();
+        if(hasWorker && hasCluster ){
+            workerImage.classList.add('invalid');
+            errorMsg.textContent = 'Cannot select worker VM image when cluster VM image is selected.';
+        }else if(hasWorker && !hasControlPlane){
+            workerImage.classList.add('invalid');
+            errorMsg.textContent = 'Worker VM image requires control plane image.';
+        }else{
+            workerImage.classList.remove('invalid');
+            errorMsg.textContent = '';
+            errorMsgOther.textContent = '';
+        }
+    }, false)
+
+    controlPlaneImage.addEventListener("change", (e)=>{
+        const errorMsg  = document.getElementById("errorMsg-control-plane-vm-image");
+        const errorMsgOther  = document.getElementById("errorMsg-worker-vm-image");
+        const hasCluster = clusterImage.value;
+        const hasControlPlane = controlPlaneImage.value;
+        const hasWorker = workerImage.value;
+        e.preventDefault();
+        if(hasControlPlane && hasCluster ){
+            controlPlaneImage.classList.add('invalid');  
+            errorMsg.textContent = 'Cannot select control plane VM image when cluster VM image is selected.';
+        }else if(!hasWorker && hasControlPlane){
+            controlPlaneImage.classList.add('invalid');
+            errorMsg.textContent = 'Control plane VM image requires worker VM image.';
+        }else{
+            controlPlaneImage.classList.remove('invalid');
+            errorMsg.textContent = '';
+            errorMsgOther.textContent = '';
         }
     }, false)
     
@@ -653,6 +731,16 @@ function parseSSEData(text) {
 
 function isValidURL(url) {
   const regex = /^(https?:\/\/)?((([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})|(\d{1,3}(\.\d{1,3}){3}))(:\d+)?(\/[^\s]*)?$/;
+  return regex.test(url);
+}
+
+function isValidIP(url) {
+  const regex = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
+  return regex.test(url);
+}
+
+function isValidLBRange(url) {
+  const regex = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)-(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
   return regex.test(url);
 }
 
